@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+    <meta charset='utf-8'>
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <meta name="description" content="Esp8266-deauth-all : ESP8266 DEAUTH for arduino">
+
+    <link rel="stylesheet" type="text/css" media="screen" href="stylesheets/stylesheet.css">
+
+    <title>Esp8266-deauth-all</title>
+  </head>
+
+  <body>
+
+    <!-- HEADER -->
+    <div id="header_wrap" class="outer">
+        <header class="inner">
+          <a id="forkme_banner" href="https://github.com/darkESP/ESP8266-DeAuth-All">View on GitHub</a>
+
+          <h1 id="project_title">Esp8266-deauth-all</h1>
+          <h2 id="project_tagline">ESP8266 DEAUTH for arduino</h2>
+
+            <section id="downloads">
+              <a class="zip_download_link" href="https://github.com/darkESP/ESP8266-DeAuth-All/zipball/master">Download this project as a .zip file</a>
+              <a class="tar_download_link" href="https://github.com/darkESP/ESP8266-DeAuth-All/tarball/master">Download this project as a tar.gz file</a>
+            </section>
+        </header>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <div id="main_content_wrap" class="outer">
+      <section id="main_content" class="inner">
+        <h1>
+<a id="esp8266-deauth" class="anchor" href="#esp8266-deauth" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>ESP8266 DEAUTH</h1>
+
+<p>Note* this is a mod from github.com/RandDruid/esp8266-deauth</p>
+
+<h3>
+<a id="additional-items-added" class="anchor" href="#additional-items-added" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Additional items added:</h3>
+
+<p>1) ssid whitelist<br>
+2) much stable serial dump<br>
+3) auto restart  </p>
+
+<h3>
+<a id="installation" class="anchor" href="#installation" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Installation</h3>
+
+<p>I am using Arduino 1.6.5, in board Manager please choose ESP version 2.0.0-rc (it required SDK 1.3) else you will get -1 from wifi_send_pkt_freedom().   </p>
+
+<p>This has been declared in code, not needs to modify user_interface.h</p>
+
+<pre><code>           typedef void (*freedom_outside_cb_t)(uint8 status);
+           int wifi_register_send_pkt_freedom_cb(freedom_outside_cb_t cb);
+           void wifi_unregister_send_pkt_freedom_cb(void);
+           int wifi_send_pkt_freedom(uint8 *buf, int len, bool sys_seq);
+</code></pre>
+      </section>
+    </div>
+
+    <!-- FOOTER  -->
+    <div id="footer_wrap" class="outer">
+      <footer class="inner">
+        <p class="copyright">Esp8266-deauth-all maintained by <a href="https://github.com/darkESP">darkESP</a></p>
+        <p>Published with <a href="https://pages.github.com">GitHub Pages</a></p>
+      </footer>
+    </div>
+
+    
+
+  </body>
+</html>

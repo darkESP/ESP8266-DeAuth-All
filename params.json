@@ -1,0 +1,6 @@
+{
+  "name": "Esp8266-deauth-all",
+  "tagline": "ESP8266 DEAUTH for arduino",
+  "body": "#ESP8266 DEAUTH\r\n\r\nNote* this is a mod from github.com/RandDruid/esp8266-deauth\r\n\r\n###Additional items added:\r\n1) ssid whitelist  \r\n2) much stable serial dump  \r\n3) auto restart  \r\n\r\n###Installation\r\nI am using Arduino 1.6.5, in board Manager please choose ESP version 2.0.0-rc (it required SDK 1.3) else you will get -1 from wifi_send_pkt_freedom().   \r\n\r\nThis has been declared in code, not needs to modify user_interface.h\r\n\r\n               typedef void (*freedom_outside_cb_t)(uint8 status);\r\n               int wifi_register_send_pkt_freedom_cb(freedom_outside_cb_t cb);\r\n               void wifi_unregister_send_pkt_freedom_cb(void);\r\n               int wifi_send_pkt_freedom(uint8 *buf, int len, bool sys_seq);\r\n\r\n\r\n\r\n\r\n\r\n\r\n",
+  "note": "Don't delete this file! It's used internally to help with page regeneration."
+}
